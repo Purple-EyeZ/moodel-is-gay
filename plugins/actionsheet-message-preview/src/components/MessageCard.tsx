@@ -1,19 +1,18 @@
 import { Design } from '@revenge-mod/discord/design'
-import { Tokens } from "@revenge-mod/discord/common/tokens"
-import { View, Text, Image } from "react-native"
+import { Tokens } from '@revenge-mod/discord/common/tokens'
+import { withProps } from '@revenge-mod/modules/finders/filters'
+import { View, Text, Image } from 'react-native'
 
 import ExpandableCard from "./ExpandableCard";
 import Chip from "./Chip";
+import { logger } from '@revenge-mod/devtools-shared/logger';
 
 const { Stack, createStyles } = Design;
 
-const Avatar = revenge.modules.finders.filters.withProps(
-    "default",
-    "AvatarSizes",
-    "getStatusSize",
-)
+const Avatar = withProps("default","AvatarSizes","getStatusSize")
+logger.log("avatar", Avatar)
 
-const useMessageCardStyles = createStyles({
+const messageCardStyles = createStyles({
     card: {
         backgroundColor: Tokens.default.colors.CARD_SECONDARY_BG,
         borderRadius: 10,
@@ -34,7 +33,7 @@ const useMessageCardStyles = createStyles({
 });
 
 export default function MessageCard({ message, header }) {
-    const messageCardStyles = useMessageCardStyles();
+    const styles = messageCardStyles();
     
     const { attachments, author, content, stickerItems: stickers } = message;
 
@@ -47,15 +46,15 @@ export default function MessageCard({ message, header }) {
 
     return (
         <Stack spacing={8}>
-            <ExpandableCard style={messageCardStyles.card}>
+            <ExpandableCard style={styles.card}>
                 <View style={{display: "flex", flexDirection: "row"}}>
                     <Avatar user={author?.id} avatarDecoration={author?.avatarDecoration} />
                     <View style={{flex: 1, marginLeft: 12}}>
-                        <Text selectable style={messageCardStyles.header}>
+                        <Text selectable style={styles.header}>
                             {message.nick ?? author.username}
                         </Text>
                         {content.length > 0 && (
-                            <Text selectable style={messageCardStyles.message}>
+                            <Text selectable style={styles.message}>
                                 {content}
                             </Text>
                         )}
