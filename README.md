@@ -17,6 +17,7 @@ A plugin is **JS-only** when it has only a JS entry file. A plugin can have both
 ```
 ├── plugins/
 │   ├── example-plugin/            # Native + JS
+│   │   ├── assets/test.txt        # assets, read using pluginDir
 │   │   ├── manifest.json          # id, metadata, dist.* paths
 │   │   ├── src/main/kotlin/com/example/plugin/MyPlugin.kt   # -> plugin.jar
 │   │   └── js/index.ts            # -> index.js
@@ -36,8 +37,7 @@ To add a plugin, create `plugins/<name>/manifest.json` and add a `src/main` fold
 
 - **JDK 25 or later** and the **Android SDK**, with `build-tools` and `platform 36`.
   Don't forget to set `sdk.dir` in `local.properties`, or set the `ANDROID_HOME` environment variable.
-- **A JS runtime** for the JS build: [Node](https://nodejs.org/) 22.18 or later,
-  [Deno](https://deno.com/) 2, or [Bun](https://bun.com/).
+- **[Bun](https://bun.com/)** or **[Node.js](https://nodejs.org/)**.
 - **The Revenge plugin API in your local Maven repository.** Run this in the `revenge-xposed` repository:
 
   ```sh
@@ -45,6 +45,17 @@ To add a plugin, create `plugins/<name>/manifest.json` and add a `src/main` fold
   ```
 
   The task publishes `io.github.revenge:api`. `gradle/libs.versions.toml` pins the version.
+
+### Fetching packages from GitHub Packages
+
+Revenge API is published to GitHub Packages. To fetch packages from GitHub Packages, you'll need to set up a **personal access token** with `read:packages`.
+
+This template requires you to put the token in your local Gradle properties file (`~/.gradle/gradle.properties`):
+
+```properties
+GitHubPackagesUsername=YOUR_GITHUB_USERNAME
+GitHubPackagesPassword=YOUR_PERSONAL_ACCESS_TOKEN
+```
 
 ## Build
 
@@ -54,15 +65,15 @@ Build and package every plugin:
 ./gradlew packageAllPlugins
 ```
 
-The task writes one `build/dist/<id>.zip` per plugin. Each ZIP holds `manifest.json`, the dexed JAR
-of a native plugin, and the JS bundle of a plugin that has one.
+The task writes one `build/dist/<id>@<version>.zip` per plugin. Each ZIP holds `manifest.json`, the
+dexed JAR of a native plugin, and the JS bundle of a plugin that has one. The version comes from
+`manifest.json`, so an artifact always states which version it holds.
 
 Build one plugin, or only one part of it:
 
 ```sh
-./gradlew packageExamplePlugin              # one plugin -> build/dist/<id>.zip
+./gradlew packageExamplePlugin              # one plugin -> build/dist/<id>@<version>.zip
 ./gradlew :plugins:example-plugin:dexJar    # native only -> plugins/example-plugin/build/outputs/plugin/plugin.jar
-# replace bun with npm if you use node
 bun install                                 # install the dependencies
 bun run build                               # every JS bundle -> plugins/<name>/build/js/index.js
 bun run build example-plugin                # the JS bundle of one plugin
@@ -78,7 +89,8 @@ Gradle derives each package task name from the folder name, example: `plugins/ex
   "id": "com.example.plugin",       // also the folder name on disk
   "name": "Example Plugin",
   "description": "...",
-  "author": "Your Name",
+  "author": "Your Name <643945264868098049> (https://discord.com \"Website\")",  // see `author` below
+  "contributors": ["Someone Else <669627189624307712> (mailto:support@discord.com)", "Some Other Person"],  // optional, same format
   "version": "1.0.0",               // the version of this plugin. Required.
   "dependencies": {                 // keyed by plugin id
     "revenge.api": { "version": ">=1" },
@@ -93,6 +105,21 @@ Gradle derives each package task name from the folder name, example: `plugins/ex
   }
 }
 ```
+
+### `author` and `contributors`
+
+Both use an NPM-like format. Discord user IDs and links are optional and repeatable:
+
+```
+Name <DISCORD_ID_1> <DISCORD_ID_N> (LINK_1) (LINK_N "Optional label")
+```
+
+- Put every Discord ID before the first link.
+- Links must start with `https://`, `http://` or `mailto:`.
+- A plain `Your Name` is still valid.
+
+Revenge shows the author as a button that opens a sheet with everyone's profiles and links. Revenge only shows at most 5 IDs and 5 links per each person.
+Supplying contact information is optional. If the string does not follow the format, Revenge shows it as plain text.
 
 ### `version`
 
@@ -219,7 +246,7 @@ A user can add the repository URL in Revenge. Browsing, dependency resolution an
 A **channel is a named pointer into the published versions of one plugin**. In `index.json` each plugin carries both maps:
 
 ```jsonc
-"channels": { "latest": "1.2.0", "testing": "1.3.0-beta" },
+"channels": { "latest": "1.2.0", "beta": "1.3.0-beta" },
 "versions": { "1.2.0": { /* … */ }, "1.3.0-beta": { /* … */ } }
 ```
 
@@ -255,6 +282,81 @@ These rules apply:
 - A channel name carries no version semantics. An `lts` version is the same artifact as its plain version.
   You only point at it for longer. To promote `beta` to `latest`, edit the pointer. No rebuilds or republishes.
 - **A dependency never references a channel.** A dependency constrains versions only, so a mixed-channel install can resolve.
+
+### The pool
+
+Every published artifact lives in one flat directory on the published branch, next to the index:
+
+```
+pool/com.example.plugin@1.0.0.zip
+pool/com.example.plugin@1.2.0.zip
+pool/palmdevs.silent-typing@1.0.0.zip
+index.json
+```
+
+The branch is `gh-pages` by default. To use a different one, set the `POOL_BRANCH` repository
+variable under Settings, Secrets and variables, Actions. All three workflows read it, so one
+variable moves the pool, the index and the migration together.
+
+The pool is the **only** record of what is published. A version is published when its artifact is in
+the pool, and `index.json` is a pure function of the directory. Regenerating it can never invent or
+lose a version. To unpublish a version, delete its file and regenerate.
+
+The `@` separator is in neither the ID charset nor the version charset, so both halves always parse.
+The generator also opens every archive and compares the file name against the manifest inside it. A
+mislabeled artifact fails the build instead of entering the index under the wrong version.
+
+Git tags and GitHub Releases are written for changelogs only. Nothing reads them.
+
+### Automated releases
+
+> [!IMPORTANT]  
+> You'll need to setup a **personal access token** with `read:packages` and put it in **Repository Settings > Secrets and variables > Actions** as `READ_PACKAGES_TOKEN`.  
+> The workflows use it to download the Revenge API dependency. You may encounter a `401` error during build if you don't set it up.
+
+Two workflows publish the repository. The CLI holds the release logic, and it never talks to a Git
+host. Both workflows call it with local files. To port the repository to another host, you rewrite
+the workflow steps and change no CLI code.
+
+The workflows declare triggers, permissions and inputs only. Each step runs a script in
+`.github/scripts/`, so you can run the same code on your machine and read a failure as a shell
+error rather than a rendered YAML block.
+
+`release.yml` runs on a push to `main`. It checks out the pool, then calls `plan-releases`, which
+reads every `manifest.json` and lists the plugins whose version is not in the pool yet. The command
+also refuses a downgrade. It fails when a manifest version is below the newest published version of
+that plugin. The comparison uses the same order as the client, so a bare version wins over a labeled
+one. You can promote `1.2.0-rc` to `1.2.0` without a failure.
+
+The workflow then builds the planned plugins, copies the artifacts into the pool, regenerates the
+index, and pushes **artifacts and index in one commit**. The branch never holds an index that points
+at a file it does not have, and a run that fails part way publishes nothing. Re-running it is safe.
+
+Because the pool is keyed by plugin ID, renaming a plugin folder keeps its release history.
+
+Run the planner against a checkout of the published branch to see what a push would release:
+
+```sh
+git clone --branch gh-pages <your repo url> published
+bun run plan-releases -- --pool published/pool
+bun run plan-releases -- --pool published/pool --out plan.json
+```
+
+The planner writes nothing to the pool. `--pool` is required, because an absent directory looks like
+an empty pool and would republish every version.
+
+`publish-index.yml` runs on dispatch only. It regenerates `index.json` from the artifacts already in
+the pool and commits it when it changed. Use it after you edit the `repo.config.json` channel
+overrides, or after you delete an artifact to unpublish a version. Releasing does not need it.
+
+### PR validation security warning
+
+Pull requests from forks run in the context of the base repository. This workflow uses `pull_request_target`, which means it runs with the base repository's permissions and secrets.
+This can be a security risk if the workflow executes untrusted code from the fork. You should configure pull requests to require maintainer approval by going to **Settings > Actions > General**, and set **Require approval for all external contributors**.
+
+> [!NOTE]  
+> By default, validation will fail for pull requests from forks. To acknowledge the security warning and allow the workflow to run, you must set the `ACKNOWLEDGE_PR_SECURITY_WARNING` repository variable to `true` in your repository settings.
+
 
 ### Serve a repository on your machine
 

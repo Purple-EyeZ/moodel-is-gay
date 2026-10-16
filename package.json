@@ -1,13 +1,13 @@
 {
-	"name": "@mudrhiod/revenge-plugins",
+	"name": "@example/revenge-plugins",
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"build": "bun ./node_modules/@revenge-mod/plugin-cli/src/main.ts build",
+		"build": "revenge-plugin build",
 		"build:dev": "revenge-plugin build --dev",
 		"generate-index": "revenge-plugin generate-index",
-		"serve": "bun ./node_modules/@revenge-mod/plugin-cli/src/main.ts serve",
-		"update:ids": "bun scripts/update-discord-module-ids.mjs",
+		"plan-releases": "revenge-plugin plan-releases",
+		"serve": "revenge-plugin serve",
 		"lint": "biome check",
 		"lint:types": "tsc --noEmit && tsc -p cli --noEmit"
 	},
@@ -18,11 +18,10 @@
 		"@revenge-mod/types": "git+https://github.com/revenge-mod/revenge-types.git"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.10",
-		"@shopify/flash-list": "^2.3.2",
-		"@types/node": "^26.3.0",
+		"@biomejs/biome": "^2.5.12",
+		"@types/node": "^26.4.1",
 		"@types/react": "^19.2.18",
-		"react-native": "0.87.0",
+		"react-native": "0.81.6",
 		"typescript": "^7.0.2"
 	},
 	"overrides": {
@@ -38,6 +37,7 @@
 		"react-native-screens": "npm:dry-uninstall"
 	},
 	"trustedDependencies": [
+		"@revenge-mod/plugin-cli",
 		"@swc/core"
 	]
 }

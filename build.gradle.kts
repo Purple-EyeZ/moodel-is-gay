@@ -2,6 +2,8 @@ import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import groovy.json.JsonSlurper
 import java.io.File
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.util.concurrent.Callable
 import javax.inject.Inject
 import org.gradle.process.ExecOperations
@@ -27,6 +29,12 @@ interface ExecOpsProvider {
 
 val rootExecOps = objects.newInstance<ExecOpsProvider>().execOps
 
+tasks.register<Delete>("clean") {
+    group = "build"
+    description = "Deletes the root build directory."
+    delete(layout.buildDirectory)
+}
+
 // `./gradlew clean packageAllPlugins` also runs every `:plugins:<name>:clean`,
 // which would delete freshly built artifacts mid-build; the tasks below `mustRunAfter` these.
 val cleanTasks = Callable { rootProject.allprojects.mapNotNull { it.tasks.findByName("clean") } }
@@ -43,7 +51,13 @@ fun Map<String, Any?>.obj(key: String) = this[key] as? Map<String, Any?>
 
 fun Map<String, Any?>.str(key: String) = this[key] as? String
 
-data class PluginDef(val dir: File, val id: String, val jarName: String?, val scriptName: String?)
+data class PluginDef(
+    val dir: File,
+    val id: String,
+    val version: String,
+    val jarName: String?,
+    val scriptName: String?,
+)
 
 val pluginDefs = file("plugins").listFiles().orEmpty()
     .filter(File::isDirectory)
@@ -52,8 +66,9 @@ val pluginDefs = file("plugins").listFiles().orEmpty()
         val manifest = File(dir, "manifest.json").takeIf(File::isFile)?.let(::parseJson)
             ?: return@mapNotNull null
         val id = manifest.str("id") ?: return@mapNotNull null
+        val version = manifest.str("version") ?: return@mapNotNull null
         val dist = manifest.obj("dist").orEmpty()
-        PluginDef(dir, id, dist.obj("android")?.str("path"), dist.str("script"))
+        PluginDef(dir, id, version, dist.obj("android")?.str("path"), dist.str("script"))
     }
 
 // ---------------------------------------------------------------------------------------------
@@ -73,7 +88,8 @@ data class JsTool(val kind: String, val exe: File) {
 
     val buildCommand: List<String>
         get() = when (kind) {
-            "bun", "npm" -> listOf(exe.absolutePath, "run", "build")
+            "npm" -> listOf(exe.absolutePath, "run", "build")
+            "bun" -> listOf(exe.absolutePath, "--bun", "run", "build")
             // Deno creates no node_modules/.bin shims, so `deno task build` cannot resolve the CLI,
             // so we run its bin file directly.
             "deno" -> listOf(
@@ -182,6 +198,10 @@ configure(subprojects.filter { it.path.startsWith(":plugins:") }) {
         )
         inputs.files(classDirs).withPropertyName("classDirs").optional()
 
+        // Java resources are packaged as-is, so the plugin can read them through its class loader.
+        val resources = fileTree("src/main/resources")
+        inputs.files(resources).withPropertyName("resources").optional()
+
         val outJar = layout.buildDirectory.file("outputs/plugin/plugin.jar")
         outputs.file(outJar).withPropertyName("dexJar")
 
@@ -213,13 +233,24 @@ configure(subprojects.filter { it.path.startsWith(":plugins:") }) {
                     *classFiles.map { it.absolutePath }.toTypedArray(),
                 )
             }
+
+            if (!resources.isEmpty) {
+                FileSystems.newFileSystem(out.toPath()).use { jar ->
+                    resources.visit {
+                        val target = jar.getPath(relativePath.pathString)
+                        if (isDirectory) Files.createDirectories(target)
+                        else Files.copy(file.toPath(), target)
+                    }
+                }
+            }
+
             logger.lifecycle("Dexed $path -> ${out.relativeTo(rootProject.projectDir)}")
         }
     }
 }
 
 // ---------------------------------------------------------------------------------------------
-// JS bundles (all plugins at once) and per-plugin packaging into build/dist/<id>.zip
+// JS bundles (all plugins at once) and per-plugin packaging into build/dist/<id>@<version>.zip
 // ---------------------------------------------------------------------------------------------
 
 val buildJs = tasks.register("buildJs") {
@@ -262,20 +293,29 @@ val buildJs = tasks.register("buildJs") {
     }
 }
 
+// Packaging always starts from an empty dist directory. Archive names only contain the
+// plugin id and version, so retaining a same-name archive would keep its old digest in the index.
+val cleanDist = tasks.register<Delete>("cleanDist") {
+    group = "revenge"
+    description = "Deletes packaged plugin archives so their digests are regenerated."
+    delete(layout.buildDirectory.dir("dist"))
+    outputs.upToDateWhen { false }
+}
+
 val packageAllPlugins = tasks.register("packageAllPlugins") {
     group = "revenge"
-    description = "Builds and packages every plugin into build/dist/<id>.zip."
+    description = "Builds and packages every plugin into build/dist/<id>@<version>.zip."
 }
 
 fun taskSuffix(dirName: String): String =
     dirName.split(Regex("[^A-Za-z0-9]")).filter(String::isNotEmpty)
         .joinToString("") { it.replaceFirstChar(Char::uppercase) }
 
-pluginDefs.forEach { (dir, id, jarName, scriptName) ->
+pluginDefs.forEach { (dir, id, version, jarName, scriptName) ->
     val pkg = tasks.register<Zip>("package${taskSuffix(dir.name)}") {
         group = "revenge"
         description = "Packages '$id' into a distributable ZIP."
-        dependsOn(buildJs)
+        dependsOn(buildJs, cleanDist)
         mustRunAfter(cleanTasks)
 
         from(File(dir, "manifest.json"))
@@ -295,7 +335,11 @@ pluginDefs.forEach { (dir, id, jarName, scriptName) ->
             }
         }
 
-        archiveFileName.set("$id.zip")
+        // Extra files the plugin reads at runtime (fonts, images), kept under `assets/` in the ZIP
+        val assets = File(dir, "assets")
+        if (assets.isDirectory) from(assets) { into("assets") }
+
+        archiveFileName.set("$id@$version.zip")
         destinationDirectory.set(layout.buildDirectory.dir("dist"))
         doLast { logger.lifecycle("Packaged $id -> ${archiveFile.get().asFile.relativeTo(rootDir)}") }
     }
