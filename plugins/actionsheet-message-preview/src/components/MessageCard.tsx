@@ -1,39 +1,50 @@
-import { Design } from '@revenge-mod/discord/design'
-import { Tokens } from '@revenge-mod/discord/common/tokens'
-import { withProps } from '@revenge-mod/modules/finders/filters'
-import { View, Text, Image } from 'react-native'
+import { Design } from '@revenge-mod/discord/design';
+import { Image, View, type ImageSourcePropType } from 'react-native';
+import { proxify } from '@revenge-mod/utils/proxy';
+import { Tokens } from '@revenge-mod/discord/common/tokens';
+import { AssetId } from '@revenge-mod/assets/types';
 
 import ExpandableCard from "./ExpandableCard";
 import Chip from "./Chip";
-import { logger } from '@revenge-mod/devtools-shared/logger';
 
-const { Stack, createStyles } = Design;
+const { Stack, createStyles, Text } = Design;
 
-const Avatar = withProps("default","AvatarSizes","getStatusSize")
-logger.log("avatar", Avatar)
+type AvatarUser = {
+    getAvatarURL(guildId?: string | null, size?: number): string | AssetId
+};
 
-const messageCardStyles = createStyles({
-    card: {
-        backgroundColor: Tokens.default.colors.CARD_SECONDARY_BG,
-        borderRadius: 10,
-        padding: 16,
-        gap: 8,
-    },
-    header: {
-        fontFamily: "ggsans-Semibold, NotoSans-Semibold",
-        lineHeight: 18,
-        variant: "text-sm/semibold",
-        fontSize: 14
-    },
-    message: {
-        fontFamily: "ggsans-Medium, NotoSans-Medium",
-        lineHeight: 18,
-        fontSize: 14
-    },
-});
+function getAvatarSource(
+    user: AvatarUser,
+    guildId?: string | null | undefined
+): ImageSourcePropType {
+    const avatar = user.getAvatarURL(guildId, 32);
+    return typeof avatar === 'string' ? { uri: avatar } : avatar;
+};
+
+const useMessageCardStyles = proxify(() => 
+    createStyles({
+        card: {
+            backgroundColor: Tokens.default.colors.CARD_SECONDARY_BG,
+            borderRadius: 10,
+            padding: 16,
+            gap: 8,
+        },
+        header: {
+            fontFamily: "ggsans-Semibold, NotoSans-Semibold",
+            lineHeight: 18,
+            variant: "text-sm/semibold",
+            fontSize: 14
+        },
+        message: {
+            fontFamily: "ggsans-Medium, NotoSans-Medium",
+            lineHeight: 18,
+            fontSize: 14
+        },
+    })
+);
 
 export default function MessageCard({ message, header }) {
-    const styles = messageCardStyles();
+    const styles = useMessageCardStyles();
     
     const { attachments, author, content, stickerItems: stickers } = message;
 
@@ -48,13 +59,16 @@ export default function MessageCard({ message, header }) {
         <Stack spacing={8}>
             <ExpandableCard style={styles.card}>
                 <View style={{display: "flex", flexDirection: "row"}}>
-                    <Avatar user={author?.id} avatarDecoration={author?.avatarDecoration} />
+                    <Image
+                        source={getAvatarSource(author, message.guild_id)}
+                        style={{ width: 32, height: 32, borderRadius: 16 }}
+                    />
                     <View style={{flex: 1, marginLeft: 12}}>
-                        <Text selectable style={styles.header}>
+                        <Text style={styles.header}>
                             {message.nick ?? author.username}
                         </Text>
                         {content.length > 0 && (
-                            <Text selectable style={styles.message}>
+                            <Text style={styles.message}>
                                 {content}
                             </Text>
                         )}

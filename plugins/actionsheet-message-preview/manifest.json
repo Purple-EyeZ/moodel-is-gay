@@ -3,8 +3,8 @@
 	"id": "mudrhiod.actionsheetmessagepreview",
 	"name": "ActionSheetMessagePreview",
 	"description": "Preview messages within it's own action sheet.",
-	"author": "Mudrhiod",
-	"version": "1.0.2",
+	"author": "Mudrhiod <807170846497570848>",
+	"version": "1.0.4",
 	"dependencies": {
 		"revenge.api": {
 			"version": ">=1 <2"
