@@ -1,6 +1,6 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "@mudrhiod/revenge-plugins",
@@ -230,9 +230,9 @@
 
     "@revenge-mod/devtools-shared": ["@revenge-mod/devtools-shared@1.3.0", "", { "dependencies": { "chalk": "^5.6.2", "devalue": "^5.3.2" } }, "sha512-MLox/xQsYtMG78R4R8sy32P5X7ILUNUPAX8IiWjUsPIclkTweDvwEAUadkvbBo8j+/ZJaJdif+Fg/C9YQNlOqg=="],
 
-    "@revenge-mod/plugin-cli": ["@revenge-mod/plugin-cli@github:revenge-mod/revenge-plugin-cli#4dcf299", { "dependencies": { "@swc/core": "^1.15.46", "fflate": "^0.8.3", "rolldown": "^1.2.0" }, "peerDependencies": { "@revenge-mod/types": "git+https://github.com/revenge-mod/revenge-types.git" }, "bin": { "revenge-plugin": "bin/revenge-plugin.js" } }, "revenge-mod-revenge-plugin-cli-4dcf299", "sha512-uBxokG5J4wK+3cLamoBS+g155sQrzlhwAQhdnuuqG8UkRH6lKmI4yXfV07/U9TlFqlZoBRdlkmsfjNVBhXMA5g=="],
+    "@revenge-mod/plugin-cli": ["@revenge-mod/plugin-cli@github:revenge-mod/revenge-plugin-cli#4dcf299", { "dependencies": { "@swc/core": "^1.15.46", "fflate": "^0.8.3", "rolldown": "^1.2.0" }, "peerDependencies": { "@revenge-mod/types": "git+https://github.com/revenge-mod/revenge-types.git" }, "bin": { "revenge-plugin": "bin/revenge-plugin.js" } }, "revenge-mod-revenge-plugin-cli-4dcf299"],
 
-    "@revenge-mod/types": ["@revenge-mod/types@github:revenge-mod/revenge-types#a2431d7", { "dependencies": { "buffer": "^6.0.3" }, "peerDependencies": { "@react-navigation/core": "^7.14.0", "@react-navigation/native": "^7.1.28", "@react-navigation/stack": "^7.7.2", "@shopify/flash-list": "2.3.2", "@types/node": "^25.9.2", "react": "19.2.3", "react-native": "0.86.0", "react-native-gesture-handler": "^3.2.1", "react-native-reanimated": "^4.5.3", "react-native-safe-area-context": "^5.8.0" }, "optionalPeers": ["@react-navigation/core", "@react-navigation/native", "@react-navigation/stack", "@shopify/flash-list", "@types/node", "react-native-safe-area-context"] }, "revenge-mod-revenge-types-a2431d7", "sha512-XnIzlWWkLYDa5PxXqERbwcGyoJRTL36P56AGtU8RCNLqyC15mdJsKUiJoUTyUh3xt3JEg4cN4aNhs9ajJUDsCA=="],
+    "@revenge-mod/types": ["@revenge-mod/types@github:revenge-mod/revenge-types#a2431d7", { "dependencies": { "buffer": "^6.0.3" }, "peerDependencies": { "@react-navigation/core": "^7.14.0", "@react-navigation/native": "^7.1.28", "@react-navigation/stack": "^7.7.2", "@shopify/flash-list": "2.3.2", "@types/node": "^25.9.2", "react": "19.2.3", "react-native": "0.86.0", "react-native-gesture-handler": "^3.2.1", "react-native-reanimated": "^4.5.3", "react-native-safe-area-context": "^5.8.0" }, "optionalPeers": ["@react-navigation/core", "@react-navigation/native", "@react-navigation/stack", "@shopify/flash-list", "@types/node", "react-native-safe-area-context"] }, "revenge-mod-revenge-types-a2431d7"],
 
     "@rolldown/binding-android-arm64": ["@rolldown/binding-android-arm64@1.2.4", "", { "os": "android", "cpu": "arm64" }, "sha512-jHC2cnyKz5xU2fhECtFl8OZ83cYNt13GZQD+0uMJ/X3o+ijmd56okHhTUwxVSHPx1IRVIJEZ1/1pPzeLCU6XKA=="],
 
