@@ -1,11 +1,13 @@
+/// <reference types="@revenge-mod/themes-api" />
+
 export default plugin({
-    preInit({ themes }) {
-        themes.registerGroup(`solar`, {
+	preInit({ themes }) {
+		themes.registerGroup(`solar`, {
             name: `Solar`,
             description: `A giant iconpack, as big as the solar system!`,
-        });
+        })
 
-        themes.registerIconPack(`solar`, `bold`, {
+		themes.registerIconPack(`solar`, `bold`, {
             name: `Solar (bold)`,
             description: `Solar Iconpack with the bold icon style`,
             icons: {
@@ -2572,6 +2574,6 @@ export default plugin({
                 xbox_app_phone: `assets/solar-broken/modules/user_settings/images/xbox_app_phone.png`,
                 xbox_voice_upsell: `assets/solar-broken/modules/video_calls/native/images/xbox_voice_upsell.png`,
             },
-        });
-    },
+        })
+	},
 })

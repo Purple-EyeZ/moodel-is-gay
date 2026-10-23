@@ -4,11 +4,7 @@ kotlin = "2.4.10"
 
 coroutines = "1.11.0"
 xposed = "82"
-<<<<<<< HEAD
-revengeApi = "1.1.0"
-=======
 revengeApi = "1.2.1"
->>>>>>> upstream/main
 
 compileSdk = "36"
 minSdk = "24"
