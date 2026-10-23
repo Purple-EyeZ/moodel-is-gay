@@ -1,5 +1,4 @@
 export default plugin({
-    // Registering early refreshes a picked theme before Discord renders
     preInit({ themes }) {
         themes.registerGroup(`solar`, {
             name: `Solar`,

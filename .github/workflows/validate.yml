@@ -8,6 +8,10 @@ on:
   pull_request_target:
     paths:
       - 'plugins/**'
+<<<<<<< HEAD
+=======
+      - 'themes/**'
+>>>>>>> upstream/main
       - 'cli/**'
       - '.github/**'
       - 'repo.config.json'

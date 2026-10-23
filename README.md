@@ -1,7 +1,7 @@
 # Revenge Plugin Template
 
 This repository is a starter monorepo for external Revenge plugins. Each plugin becomes one ZIP
-file. One repository can hold any number of plugins under `plugins/`.
+file. One repository can hold any number of plugins under `plugins/`, and theme plugins under `themes/`.
 
 A plugin has up to three parts. Its own `manifest.json` declares all of them:
 
@@ -19,6 +19,7 @@ A plugin is **JS-only** when it has only a JS entry file. A plugin can have both
 │   ├── example-plugin/            # Native + JS
 │   │   ├── assets/test.txt        # assets, read using pluginDir
 │   │   ├── manifest.json          # id, metadata, dist.* paths
+│   │   ├── tsconfig.json          # the plugin's own type-check project
 │   │   ├── src/main/kotlin/com/example/plugin/MyPlugin.kt   # -> plugin.jar
 │   │   └── js/index.ts            # -> index.js
 │   ├── example-js-plugin/         # JS-only: no src/main, no dist.android
@@ -26,12 +27,26 @@ A plugin is **JS-only** when it has only a JS entry file. A plugin can have both
 │   │   └── js/index.ts
 │   ├── example-library/           # Dependency example: the plugin others depend on
 │   └── example-dependent/         # Dependency example: depends on com.example.library
+├── themes/                        # Theme plugins, built and packaged like plugins/
+│   ├── example-emoji/             # Emoji packs
+│   ├── example-fonts/             # Font packs
+│   ├── example-icons/             # Icon packs
+│   └── example-themes/            # Themes & backgrounds
 ```
 
 The bundler looks for the JS entry in this order: `js/index.*`, then `src/index.*`, then `index.*` in the plugin folder.
 Each step accepts `.ts`, `.tsx`, `.js` and `.jsx`.
 
 To add a plugin, create `plugins/<name>/manifest.json` and add a `src/main` folder for native code, a JS entry file, or both.
+
+Give each plugin a `tsconfig.json` that extends the shared settings:
+
+```json
+{ "extends": "../../tsconfig.base.json" }
+```
+
+Each plugin is type-checked as its own project, so types one plugin adds, such as a dependency's API types
+or hidden types, don't leak into other plugins. A plugin without a `tsconfig.json` isn't type-checked.
 
 ## Prerequisites
 
@@ -77,9 +92,36 @@ Build one plugin, or only one part of it:
 bun install                                 # install the dependencies
 bun run build                               # every JS bundle -> plugins/<name>/build/js/index.js
 bun run build example-plugin                # the JS bundle of one plugin
+bun run build --plugins-dir themes          # every JS bundle under themes/
 ```
 
-Gradle derives each package task name from the folder name, example: `plugins/example-plugin/` gives `packageExamplePlugin`.
+Gradle derives each package task name from the folder name, example: `plugins/example-plugin/` gives `packageExamplePlugin`. Folder names must be unique across `plugins/` and `themes/`.
+
+## Themes
+
+A theme plugin is a normal plugin that lives under `themes/`. It depends on `revenge.api.themes` and
+registers its themes in `preInit`:
+
+```ts
+/// <reference types="@revenge-mod/themes-api" />
+
+export default plugin({
+  preInit({ themes }) {
+    themes.registerGroup('my-themes', { name: 'My Themes' })
+    themes.registerTheme('my-themes', 'dark', {
+      name: 'Dark',
+      getColors: () => ({}),
+      background: { path: 'assets/background.png' },
+    })
+  },
+})
+```
+
+Besides color themes, the API allows registering font packs (`registerFontPack`), icon packs
+(`registerIconPack`) and emoji packs (`registerEmojiPack`). The examples in `themes/` show
+all available APIs. Asset paths are relative to the plugin folder, and Gradle
+packages `assets/` into the ZIP.
+
 
 ## `manifest.json`
 
