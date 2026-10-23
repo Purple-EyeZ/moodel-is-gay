@@ -3,15 +3,10 @@
 name: Validate
 
 on:
-  # WARNING: Since you generated this template, likely not in an organization that hosts the Revenge API package, you'll need your PAT to fetch the Revenge API dependency.
-  # Set it in your repository secrets as READ_PACKAGES_TOKEN, make sure it can ONLY read packages, as malicious actors could reveal your token if you approve to run actions from a PR.
-  pull_request_target:
+  pull_request:
     paths:
       - 'plugins/**'
-<<<<<<< HEAD
-=======
       - 'themes/**'
->>>>>>> upstream/main
       - 'cli/**'
       - '.github/**'
       - 'repo.config.json'
@@ -24,17 +19,10 @@ on:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
-      - name: Check PR security acknowledgment
-        run: |
-          if [ "${{ vars.ACKNOWLEDGE_PR_SECURITY_WARNING }}" != "true" ]; then
-            echo "::error::You have not acknowledged the security warning for this workflow."
-            echo "This workflow uses 'pull_request_target' and requires your explicit acknowledgment to prevent potential secret leaks."
-            echo "Please configure pull requests to require maintainer approval by going to Settings > Actions > General, and set Require approval for all external contributors."
-            echo "Then configure this variable under repository Settings > Secrets and variables > Actions > Variables."
-            exit 1
-          fi
-
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-java@v4
@@ -48,7 +36,7 @@ jobs:
       - name: Build all plugins
         run: ./gradlew --no-daemon packageAllPlugins
         env:
-          GITHUB_TOKEN: ${{ secrets.READ_PACKAGES_TOKEN }} # For Gradle to download the API dependency. Read the warning above about this token.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Generate index from built artifacts
         run: |
@@ -57,3 +45,18 @@ jobs:
             --base-url https://revenge.local \
             --out /tmp/index.json
           cat /tmp/index.json
+
+      - name: Upload built plugins
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugins
+          path: build/dist/*.zip
+          if-no-files-found: warn
+
+      - name: Upload generated index
+        uses: actions/upload-artifact@v7
+        with:
+          name: index
+          path: /tmp/index.json
+          if-no-files-found: error
+          archive: false
