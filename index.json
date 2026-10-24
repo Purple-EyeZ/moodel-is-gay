@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "name": "Mudrhiod's Plugin Forest",
+  "description": "Mudrhiods's plugins for Revenge.",
+  "plugins": {
+    "mudrhiod.actionsheetmessagepreview": {
+      "name": "ActionSheetMessagePreview",
+      "description": "Preview messages within it's own action sheet.",
+      "author": "Mudrhiod <807170846497570848>",
+      "channels": {
+        "latest": "1.0.3"
+      },
+      "versions": {
+        "1.0.3": {
+          "url": "https://purple-eyez.github.io/moodel-is-gay/pool/mudrhiod.actionsheetmessagepreview@1.0.3.zip",
+          "sha256": "5d7d4c1931542449064ab417df39a516cbf31c44fc360149509e12553202daba",
+          "size": 1922,
+          "dependencies": {
+            "revenge.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
+    "mudrhiod.solar": {
+      "name": "Solar",
+      "description": "Replaces Discord's icons with ones from the Solar iconset.",
+      "author": "Mudrhiod <807170846497570848>",
+      "channels": {
+        "latest": "1.1.1"
+      },
+      "versions": {
+        "1.1.1": {
+          "url": "https://purple-eyez.github.io/moodel-is-gay/pool/mudrhiod.solar@1.1.1.zip",
+          "sha256": "9c3c72423ec51a7002663f1e679f24ec24040197dc3fb3ac32c2b0809bd79df2",
+          "size": 10065068,
+          "dependencies": {
+            "revenge.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            },
+            "revenge.api.themes": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    }
+  }
+}
